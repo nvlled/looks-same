@@ -101,7 +101,7 @@ const buildDiffImage = (png1, png2, options, callback) => {
     const highlightColor = options.highlightColor;
     const result = png.empty(width, height);
 
-    var diffPoints = [];
+    var diffPoints = options.diffPoints ? [] : null;
     iterateRect(width, height, (x, y) => {
         if (x >= minWidth || y >= minHeight) {
             result.setPixel(x, y, highlightColor);
@@ -112,7 +112,8 @@ const buildDiffImage = (png1, png2, options, callback) => {
         const color2 = png2.getPixel(x, y);
 
         if (!options.comparator({color1, color2})) {
-            diffPoints.push([x, y]);
+            if (options.diffPoints)
+                diffPoints.push([x, y]);
             result.setPixel(x, y, highlightColor);
         } else {
             result.setPixel(x, y, color1);
@@ -225,7 +226,8 @@ exports.createDiff = function saveDiff(opts, callback) {
 
         const diffOptions = {
             highlightColor: parseColorString(opts.highlightColor),
-            comparator: opts.strict ? areColorsSame : makeCIEDE2000Comparator(tolerance)
+            comparator: opts.strict ? areColorsSame : makeCIEDE2000Comparator(tolerance),
+            diffPoints: opts.diffPoints,
         };
 
         buildDiffImage(result.first, result.second, diffOptions, (result, diffPoints) => {

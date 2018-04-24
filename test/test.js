@@ -401,13 +401,35 @@ describe('createDiff', () => {
         });
     });
 
-    it('should also return the diff-points', (done) => {
+    it('should not collect diff-options by default', (done) => {
         looksSame.createDiff({
             reference: srcPath('ref.png'),
             current: srcPath('different.png'),
             highlightColor: '#ff00ff',
         }, (error, buffer, diffPoints) => {
-            expect(diffPoints).to.be.an("array");
+            expect(diffPoints).to.equal(null);
+            done();
+        });
+    });
+    it('should also return the non-empty diff-points for different images', (done) => {
+        looksSame.createDiff({
+            reference: srcPath('ref.png'),
+            current: srcPath('different.png'),
+            highlightColor: '#ff00ff',
+            diffPoints: true,
+        }, (error, buffer, diffPoints) => {
+            expect(diffPoints).not.to.be.empty("array");
+            done();
+        });
+    });
+    it('should also return the empty diff-points for same images', (done) => {
+        looksSame.createDiff({
+            reference: srcPath('ref.png'),
+            current: srcPath('same.png'),
+            highlightColor: '#ff00ff',
+            diffPoints: true,
+        }, (error, buffer, diffPoints) => {
+            expect(diffPoints).to.be.empty("array");
             done();
         });
     });
