@@ -203,6 +203,21 @@ describe('looksSame', () => {
     });
 });
 
+describe('getDiffPoints', () => {
+    it('should return empty array for similar images', (done) => {
+        looksSame.getDiffPoints(srcPath('ref.png'), srcPath('same.png'), (error, diffPoints) => {
+            expect(diffPoints).to.be.empty();
+            done();
+        });
+    });
+    it('should return non-empty array for different images', (done) => {
+        looksSame.getDiffPoints(srcPath('ref.png'), srcPath('different.png'), (error, diffPoints) => {
+            expect(diffPoints).not.to.be.empty();
+            done();
+        });
+    });
+});
+
 describe('createDiff', () => {
     beforeEach(() => {
         this.tempName = temp.path({suffix: '.png'});
@@ -383,6 +398,17 @@ describe('createDiff', () => {
                 expect(equal).to.be.equal(true);
                 done();
             });
+        });
+    });
+
+    it('should also return the diff-points', (done) => {
+        looksSame.createDiff({
+            reference: srcPath('ref.png'),
+            current: srcPath('different.png'),
+            highlightColor: '#ff00ff',
+        }, (error, buffer, diffPoints) => {
+            expect(diffPoints).to.be.an("array");
+            done();
         });
     });
 });

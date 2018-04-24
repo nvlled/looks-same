@@ -101,6 +101,7 @@ const buildDiffImage = (png1, png2, options, callback) => {
     const highlightColor = options.highlightColor;
     const result = png.empty(width, height);
 
+    var diffPoints = [];
     iterateRect(width, height, (x, y) => {
         if (x >= minWidth || y >= minHeight) {
             result.setPixel(x, y, highlightColor);
@@ -111,11 +112,12 @@ const buildDiffImage = (png1, png2, options, callback) => {
         const color2 = png2.getPixel(x, y);
 
         if (!options.comparator({color1, color2})) {
+            diffPoints.push([x, y]);
             result.setPixel(x, y, highlightColor);
         } else {
             result.setPixel(x, y, color1);
         }
-    }, () => callback(result));
+    }, () => callback(result, diffPoints));
 };
 
 const parseColorString = (str) => {
@@ -226,12 +228,49 @@ exports.createDiff = function saveDiff(opts, callback) {
             comparator: opts.strict ? areColorsSame : makeCIEDE2000Comparator(tolerance)
         };
 
-        buildDiffImage(result.first, result.second, diffOptions, (result) => {
+        buildDiffImage(result.first, result.second, diffOptions, (result, diffPoints) => {
             if (opts.diff === undefined) {
-                result.createBuffer(callback);
+                result.createBuffer((err, buffer) => {
+                    callback(null, buffer, diffPoints);
+                });
             } else {
-                result.save(opts.diff, callback);
+                result.save(opts.diff, (err, result) => {
+                    callback(null, result, diffPoints);
+                });
             }
+        });
+    });
+};
+
+exports.getDiffPoints = function(reference, image, opts, callback) {
+    if (!callback) {
+        callback = opts;
+        opts = {};
+    }
+
+    prepareOpts(opts);
+
+    readPair(reference, image, (error, pair) => {
+        if (error) {
+            return callback(error);
+        }
+
+        const first = pair.first;
+        const second = pair.second;
+
+        if (first.width !== second.width || first.height !== second.height) {
+            return process.nextTick(() => callback(null, {
+                width: Math.max(first.width, second.width),
+                height: Math.max(first.height, second.height),
+                top: 0,
+                left: 0
+            }));
+        }
+
+        const comparator = createComparator(first, second, opts);
+
+        getDiffPixelsCoords(first, second, comparator, (result) => {
+            callback(null, result);
         });
     });
 };
